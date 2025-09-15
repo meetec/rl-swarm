@@ -1,0 +1,28 @@
+version: 0.2
+
+env:
+  variables:
+    REGION: "us-west-2"
+    IMAGE_REPO_NAME: "gensyn-swarm"
+    IMAGE_TAG: "cpu-latest"        # ili npr. "cpu-${CODEBUILD_RESOLVED_SOURCE_VERSION}"
+  parameter-store: {}
+  secrets-manager: {}
+
+phases:
+  pre_build:
+    commands:
+      - echo "Login na ECR"
+      - ACCOUNT_ID=$(aws sts get-caller-identity --query Account --output text)
+      - REPO_URI="$ACCOUNT_ID.dkr.ecr.$REGION.amazonaws.com/$IMAGE_REPO_NAME"
+      - aws ecr get-login-password --region $REGION | docker login --username AWS --password-stdin $ACCOUNT_ID.dkr.ecr.$REGION.amazonaws.com
+  build:
+    commands:
+      - echo "Docker build (CPU)"
+      - docker build -t $REPO_URI:$IMAGE_TAG --build-arg BASE_IMAGE=ubuntu:24.04 -f containerfiles/swarm-node/swarm.containerfile .
+  post_build:
+    commands:
+      - echo "Push u ECR"
+      - docker push $REPO_URI:$IMAGE_TAG
+artifacts:
+  files:
+    - '**/*'
