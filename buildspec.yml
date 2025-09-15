@@ -11,6 +11,8 @@ env:
 phases:
   pre_build:
     commands:
+      - echo "Login na DockerHub"
+      - echo $DOCKERHUB_PASSWORD | docker login -u $DOCKERHUB_USERNAME --password-stdin
       - echo "Login na ECR"
       - ACCOUNT_ID=$(aws sts get-caller-identity --query Account --output text)
       - REPO_URI="$ACCOUNT_ID.dkr.ecr.$REGION.amazonaws.com/$IMAGE_REPO_NAME"
