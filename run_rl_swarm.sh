@@ -13,6 +13,12 @@ export HF_HUB_DOWNLOAD_TIMEOUT=120  # 2 minutes
 export SWARM_CONTRACT="0x7745a8FE4b8D2D2c3BB103F8dCae822746F35Da0"
 export HUGGINGFACE_ACCESS_TOKEN="None"
 
+# Port configuration for multiple instances
+export MODAL_PORT=${MODAL_PORT:-3000}
+export OLLAMA_PORT=${OLLAMA_PORT:-11434}
+export MODAL_PROXY_URL="http://localhost:${MODAL_PORT}/api/"
+export OLLAMA_HOST="http://localhost:${OLLAMA_PORT}"
+
 # Path to an RSA private key. If this path does not exist, a new key pair will be created.
 # Remove this file if you want a new PeerID.
 DEFAULT_IDENTITY_PATH="$ROOT"/swarm.pem
@@ -146,7 +152,7 @@ if [ "$CONNECT_TO_TESTNET" = true ]; then
         echo "Building server"
         yarn build > "$ROOT/logs/yarn.log" 2>&1
     fi
-    yarn start >> "$ROOT/logs/yarn.log" 2>&1 & # Run in background and log output
+    PORT=$MODAL_PORT yarn start >> "$ROOT/logs/yarn.log" 2>&1 & # Run in background and log output
 
     SERVER_PID=$!  # Store the process ID
     echo "Started server process: $SERVER_PID"
@@ -154,13 +160,13 @@ if [ "$CONNECT_TO_TESTNET" = true ]; then
 
     # Try to open the URL in the default browser
     if [ -z "$DOCKER" ]; then
-        if open http://localhost:3000 2> /dev/null; then
-            echo_green ">> Successfully opened http://localhost:3000 in your default browser."
+        if open http://localhost:$MODAL_PORT 2> /dev/null; then
+            echo_green ">> Successfully opened http://localhost:$MODAL_PORT in your default browser."
         else
-            echo ">> Failed to open http://localhost:3000. Please open it manually."
+            echo ">> Failed to open http://localhost:$MODAL_PORT. Please open it manually."
         fi
     else
-        echo_green ">> Please open http://localhost:3000 in your host browser."
+        echo_green ">> Please open http://localhost:$MODAL_PORT in your host browser."
     fi
 
     cd ..
@@ -177,7 +183,7 @@ if [ "$CONNECT_TO_TESTNET" = true ]; then
     # Wait until the API key is activated by the client
     echo "Waiting for API key to become activated..."
     while true; do
-        STATUS=$(curl -s "http://localhost:3000/api/get-api-key-status?orgId=$ORG_ID")
+        STATUS=$(curl -s "http://localhost:$MODAL_PORT/api/get-api-key-status?orgId=$ORG_ID")
         if [[ "$STATUS" == "activated" ]]; then
             echo "API key is activated! Proceeding..."
             break
